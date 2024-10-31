@@ -23,9 +23,14 @@ Paquetes necesarios especificados en requirements.txt
 Instalación
 
 Instalar las dependencias:
-bash
-Copy code
-pip install -r requirements.txt
+
+    1- Instalar modulos y librerias requeridas
+        py -m pip install requests, pandas
+
+
+Ejecucion
+
+    py src/main.py
 
 Uso del Proyecto
 1. Configuración y Extracción de Datos
