@@ -4,6 +4,7 @@ import json                                  #libreria para leer y escribir arch
 from calendar import monthrange              #libreria para extraer datos de fechas
 
 import pandas as pd                          #libreria para modelar los datos obtenidos
+from ydata_profiling import ProfileReport
 
 def JsonaDataFrame(mes, año,num_days):
     #Función para convertir los archivos JSON del mes en un único DataFrame manteniendo la integridad de los datos
@@ -128,8 +129,11 @@ if __name__== '__main__':
     #print(df.iloc[x]['show_genres'])
     # País del webchannel del  show
     #print(df.iloc[x]['show_webChannel']['country'])
-
-        
+    
+    #Profiling Report
+    profile = ProfileReport(df, title="Pandas Profiling Report")
+    profile.to_file("./profiling/reporte_profiling.html")
+    
     #recs =0
 
     #with open(os.getcwd() + '\json\\'+ args['date']+'.json','r',encoding='utf-8') as file:
