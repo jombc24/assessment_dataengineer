@@ -26,15 +26,35 @@ def createdb(name,df_parquet):
             for Query in Schema:
                 sqc.execute(Query)            
             
+
+
             GenList=[]
             for ind in df_parquet.index:
                 for sgen in df_parquet['show_genres'][ind]:
-                    
-                # print(df_parquet['show_genres'][ind])#, df_parquet['name'][ind])
+                    Gadd=True
+                    for g in GenList:
+                        if g==sgen:
+                            Gadd=False
+                    if Gadd: GenList.append(sgen)
+             
+            it=1
+            for Ngen in GenList:
+                sqc.execute("INSERT INTO Genres (ID, Genre_number) VALUES("+str(it)+", '"+Ngen+"');")
+                it+=1
+
+            # for ind in df_parquet.index:
+            #     for sgen in df_parquet['show_links'][ind]:
+            #         print(sgen)
+
+            for ind in df_parquet.index:
+                for sgen in df_parquet['show_webChannel'][ind]:
+                    print(sgen)
+
+            # print(list(df_parquet.columns.values))
 
 
-        # print("Primeras filas del DataFrame:")
-        # print(df_parquet.head())     
+        print("Primeras filas del DataFrame:")
+        print(df_parquet.head())     
               
         # print(f"Datos exportados exitosamente a la tabla '{name}' en la base de datos '{db}'")
         
@@ -208,7 +228,7 @@ if __name__== '__main__':
         args = { 'date' : '2024-01-'+checkday} 
         # # 0LoadData(url,args)
    
-    # Crear DataFrame
+    # # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
     consultas(df, False)
     generateprofiling(df,"previa")
