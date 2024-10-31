@@ -5,22 +5,44 @@ from calendar import monthrange              #libreria para extraer datos de fec
 
 import pandas as pd                          #libreria para modelar los datos obtenidos
 from ydata_profiling import ProfileReport
-def consultas(df):
+
+def datacleanup(df):
+    # Columnas a eliminar (>70% valores nulos)
+    columns_to_drop = ['show_dvdCountry', 'show_webChannel', 'show_externals','show_image','show_runtime','image','show_schedule']
+    df = df.drop(columns=columns_to_drop)
+    # Imputar con la media/mediana
+    df['runtime'] = df['runtime'].fillna(df['runtime'].mean())
+    df['show_averageRuntime'] = df['show_averageRuntime'].fillna(df['show_averageRuntime'].mean())
+    # Imputar con valor más frecuente
+    df['show_language'] = df['show_language'].fillna(df['show_language'].mode()[0])
+    # Imputar con "Unknown" o valor específico
+    df['show_officialSite'] = df['show_officialSite'].fillna("Unknown")
+    df['summary'] = df['summary'].fillna("No summary available")
+    # Convertir campos JSON a estructuras de datos
+    df['show_genres'] = df['show_genres'].apply(lambda x: eval(x) if isinstance(x, str) else x)
+    df['show_rating'] = df['show_rating'].apply(lambda x: eval(x) if isinstance(x, str) else x)
+    # Normalizar tipos
+    df['type'] = df['type'].str.lower()
+    df['show_status'] = df['show_status'].str.lower()
+    df['show_language'] = df['show_language'].str.lower()
+    generateprofiling(df, "posterior")
+
+def consultas(df,vis):
     
     # Consultas:
     # Verificar la estructura
     x= [12,4]
-    print(df.columns)  # Ver todas las columnas
-    print(df.iloc[x])  # Ver el primer registro completo
+    if vis: print(df.columns)  # Ver todas las columnas
+    if vis: print(df.iloc[x])  # Ver el primer registro completo
     # Consultar genero del x show 
-    print(df.iloc[x]['show_genres'])
+    if vis: print(df.iloc[x]['show_genres'])
     # País del webchannel del  show
-    print(df.iloc[x]['show_webChannel']['country'])
+    if vis: print(df.iloc[x]['show_webChannel'])
     
-def generateprofiling(df):
+def generateprofiling(df,status):
     #Profiling Report
     profile = ProfileReport(df, title="Pandas Profiling Report")
-    profile.to_file("./profiling/reporte_profiling.html")
+    profile.to_file("./profiling/reporte_profiling-"+status+".html")
     
     #recs =0
 
@@ -141,8 +163,11 @@ if __name__== '__main__':
    
     # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
-    consultas(df)
-    generateprofiling(df)
+    consultas(df, False)
+    generateprofiling(df,"previa")
+    datacleanup(df)
+
+
     
 
 
