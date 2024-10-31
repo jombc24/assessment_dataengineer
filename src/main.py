@@ -5,6 +5,50 @@ from calendar import monthrange              #libreria para extraer datos de fec
 
 import pandas as pd                          #libreria para modelar los datos obtenidos
 from ydata_profiling import ProfileReport
+import sqlite3 as sq
+
+def createdb(name,df_parquet):
+    print(name)
+    try:
+        with sq.connect('./db/sec'+name+'.db') as conn:
+            print(f"Opened SQLite database with version {sq.sqlite_version} successfully.")
+
+            Schema = [ 
+                "CREATE TABLE Genres (ID INTEGER NOT NULL, Genre_number TEXT, CONSTRAINT Genres_PK PRIMARY KEY (ID));",
+                "CREATE TABLE Links (ID INTEGER NOT NULL,Show INTEGER,\"Type\" TEXT,URL TEXT,CONSTRAINT Links_PK PRIMARY KEY (ID),CONSTRAINT Links_Show_FK FOREIGN KEY (Show) REFERENCES Show(ID));",
+                "CREATE TABLE Countries (Country_ID INTEGER NOT NULL,Country_name TEXT(255),Country_code TEXT(255),Timezone TEXT(255),Official_site TEXT(255),CONSTRAINT Countries_PK PRIMARY KEY (Country_ID));",
+                "CREATE TABLE Show_type (ID INTEGER NOT NULL,\"Type\" TEXT(255),CONSTRAINT Show_type_PK PRIMARY KEY (ID));",
+                "CREATE TABLE web_channels (ID INTEGER NOT NULL,Channel_name TEXT,Country_ID INTEGER,CONSTRAINT web_channels_pk PRIMARY KEY (ID),CONSTRAINT web_channels_Countries_FK FOREIGN KEY (Country_ID) REFERENCES Countries(Country_ID));",
+                "CREATE TABLE Show (ID INTEGER NOT NULL,URL TEXT,Name TEXT,Season INTEGER,Chapter_number INTEGER,\"Type\" INTEGER NOT NULL,Airdate TEXT,Airtime TEXT,Airstamp TEXT,Runtime INTEGER,Rating TEXT,Summary TEXT,Embedded INTEGER,Lenguage TEXT,Status TEXT,AVGRuntime INTEGER,Premiered TEXT,Ended TEXT,Official_site TEXT,Weight INTEGER,CONSTRAINT Show_PK PRIMARY KEY (ID),CONSTRAINT Show_web_channels_FK FOREIGN KEY (ID) REFERENCES web_channels(ID),CONSTRAINT Show_Show_type_FK FOREIGN KEY (\"Type\") REFERENCES Show_type(ID));",
+                "CREATE TABLE Show_genres (ID INTEGER NOT NULL,ID_Genre INTEGER,ID_Show INTEGER,CONSTRAINT Show_genres_PK PRIMARY KEY (ID),CONSTRAINT Show_genres_Genres_FK FOREIGN KEY (ID_Genre) REFERENCES Genres(ID),CONSTRAINT Show_genres_Show_FK FOREIGN KEY (ID_Show) REFERENCES Show(ID));"
+                      ]
+            sqc = conn.cursor()
+            for Query in Schema:
+                sqc.execute(Query)            
+            
+            GenList=[]
+            for ind in df_parquet.index:
+                for sgen in df_parquet['show_genres'][ind]:
+                    
+                # print(df_parquet['show_genres'][ind])#, df_parquet['name'][ind])
+
+
+        # print("Primeras filas del DataFrame:")
+        # print(df_parquet.head())     
+              
+        # print(f"Datos exportados exitosamente a la tabla '{name}' en la base de datos '{db}'")
+        
+    except sq.OperationalError as e:
+        print("Failed to open database:", e)
+
+    
+def exporttosql(name,db):
+    
+
+
+    df_parquet = pd.read_parquet('./data/'+name+'.parquet')
+    createdb(db,df_parquet)
+       
 
 def saveparquet(df,name):
     df.to_parquet("./data/"+name+".parquet",compression='snappy')
@@ -162,7 +206,7 @@ if __name__== '__main__':
             checkday=str(totaldias)
         
         args = { 'date' : '2024-01-'+checkday} 
-        LoadData(url,args)
+        # # 0LoadData(url,args)
    
     # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
@@ -171,6 +215,7 @@ if __name__== '__main__':
     saveparquet(df,name="Compressed_previa")
     datacleanup(df)
     saveparquet(df,name="Compressed_posterior")
+    exporttosql("Compressed_posterior","Tvmaze_shows")
 
 
     
