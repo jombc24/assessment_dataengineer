@@ -5,6 +5,28 @@ from calendar import monthrange              #libreria para extraer datos de fec
 
 import pandas as pd                          #libreria para modelar los datos obtenidos
 from ydata_profiling import ProfileReport
+def consultas(df):
+    
+    # Consultas:
+    # Verificar la estructura
+    x= [12,4]
+    print(df.columns)  # Ver todas las columnas
+    print(df.iloc[x])  # Ver el primer registro completo
+    # Consultar genero del x show 
+    print(df.iloc[x]['show_genres'])
+    # País del webchannel del  show
+    print(df.iloc[x]['show_webChannel']['country'])
+    
+def generateprofiling(df):
+    #Profiling Report
+    profile = ProfileReport(df, title="Pandas Profiling Report")
+    profile.to_file("./profiling/reporte_profiling.html")
+    
+    #recs =0
+
+    #with open(os.getcwd() + '\json\\'+ args['date']+'.json','r',encoding='utf-8') as file:
+    #    recs = json.load(file)
+    #print(len(recs))
 
 def JsonaDataFrame(mes, año,num_days):
     #Función para convertir los archivos JSON del mes en un único DataFrame manteniendo la integridad de los datos
@@ -119,26 +141,9 @@ if __name__== '__main__':
    
     # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
+    consultas(df)
+    generateprofiling(df)
     
-    # Consultas:
-    # Verificar la estructura
-    x= [12,4]
-    #print(df.columns)  # Ver todas las columnas
-    #print(df.iloc[x])  # Ver el primer registro completo
-    # Consultar genero del x show 
-    #print(df.iloc[x]['show_genres'])
-    # País del webchannel del  show
-    #print(df.iloc[x]['show_webChannel']['country'])
-    
-    #Profiling Report
-    profile = ProfileReport(df, title="Pandas Profiling Report")
-    profile.to_file("./profiling/reporte_profiling.html")
-    
-    #recs =0
-
-    #with open(os.getcwd() + '\json\\'+ args['date']+'.json','r',encoding='utf-8') as file:
-    #    recs = json.load(file)
-    #print(len(recs))
 
 
 
