@@ -1,0 +1,50 @@
+Análisis de Calidad de Datos
+
+Problemas Identificados
+    1. Valores Faltantes
+
+        Campos críticos con alto porcentaje de valores faltantes:
+        
+        show_dvdCountry: 99.9%
+        show_network: 89.1%
+        show_runtime: 74.6%
+        image: 74.3%
+        summary: 69.0%
+        show_ended: 64.2%
+        airtime: 51.3%
+        
+        Campos con porcentaje moderado de valores faltantes:
+        
+        show_summary: 16.3%
+        runtime: 9.4%
+        show_officialSite: 9.3%
+        show_language: 6.5%
+        show_averageRuntime: 6.3%
+
+    2. Problemas de Tipos de Datos
+        Campos con tipos de datos no soportados que requieren limpieza:
+
+        rating
+        image
+        show_genres
+        show_schedule
+        show_rating
+        show_network
+        show_webChannel
+        show_dvdCountry
+        show_externals
+        show_image
+        show_links
+
+    3. Desbalanceo de Datos
+
+        La columna 'type' está altamente desbalanceada (96.2% en una categoría)
+
+    4. Correlaciones Altas
+        Varios campos presentan alta correlación:
+
+        number ↔ type
+        runtime ↔ show_averageRuntime
+        season ↔ show_runtime
+        show_id ↔ show_weight
+        show_language ↔ show_status
