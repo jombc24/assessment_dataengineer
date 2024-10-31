@@ -125,12 +125,11 @@ if __name__== '__main__':
     #print(df.columns)  # Ver todas las columnas
     #print(df.iloc[x])  # Ver el primer registro completo
     # Consultar genero del x show 
-    print(df.iloc[x]['show_genres'])
+    #print(df.iloc[x]['show_genres'])
     # País del webchannel del  show
     #print(df.iloc[x]['show_webChannel']['country'])
 
-
-
+        
     #recs =0
 
     #with open(os.getcwd() + '\json\\'+ args['date']+'.json','r',encoding='utf-8') as file:

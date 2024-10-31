@@ -25,7 +25,7 @@ Instalación
 Instalar las dependencias:
 
     1- Instalar modulos y librerias requeridas
-        py -m pip install requests, pandas, pandas-profiling[notebook,html] 
+        py -m pip install requests, pandas, pandas-profiling
 
 
 Ejecucion
