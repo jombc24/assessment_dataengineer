@@ -6,6 +6,9 @@ from calendar import monthrange              #libreria para extraer datos de fec
 import pandas as pd                          #libreria para modelar los datos obtenidos
 from ydata_profiling import ProfileReport
 
+def saveparquet(df,name):
+    df.to_parquet("./data/"+name+".parquet",compression='snappy')
+
 def datacleanup(df):
     # Columnas a eliminar (>70% valores nulos)
     columns_to_drop = ['show_dvdCountry', 'show_webChannel', 'show_externals','show_image','show_runtime','image','show_schedule']
@@ -165,7 +168,9 @@ if __name__== '__main__':
     df = JsonaDataFrame(1, 2024,num_days)
     consultas(df, False)
     generateprofiling(df,"previa")
+    saveparquet(df,name="Compressed_previa")
     datacleanup(df)
+    saveparquet(df,name="Compressed_posterior")
 
 
     
