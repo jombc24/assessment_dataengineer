@@ -7,13 +7,43 @@ import pandas as pd                          #libreria para modelar los datos ob
 from ydata_profiling import ProfileReport
 import sqlite3 as sq
 
+def CustomInsert(sqc, Records, QType):
+    it=1
+    if QType=="Schema":
+        for Query in Records:
+            sqc.execute(Query)  
+    elif QType=="Genres":
+        for record in Records:
+            sqc.execute("INSERT INTO Genres (ID, Genre_number) VALUES("+str(it)+", '"+record+"');")
+            it+=1
+    elif QType=="Country":
+        for record in Records:
+            Query = "INSERT INTO Countries (Country_ID, Country_name, Country_code, Timezone, Official_site) VALUES("+str(it)+",'"+ record[0]+"', '"+record[1]+"', '"+record[2]+"', '"
+            if record[3]is not None:
+                Query+=record[3]
+            else:
+                Query+="N/A"
+            Query+="');"
+            sqc.execute(Query)
+            it+=1
+    elif QType=="Types":
+         for record in Records:
+            sqc.execute("INSERT INTO Show_type (ID, Type) VALUES("+str(it)+", '"+record+"');")
+            it+=1
+                
+
+
 def createdb(name,df_parquet):
     print(name)
     try:
         with sq.connect('./db/sec'+name+'.db') as conn:
-            print(f"Opened SQLite database with version {sq.sqlite_version} successfully.")
+            
+            #Realizar futura integracion a registros por mes (actual dia)
 
-            Schema = [ 
+            #Variables Generales
+            HArray=[]
+            SControler=True
+            HArray = [ 
                 "CREATE TABLE Genres (ID INTEGER NOT NULL, Genre_number TEXT, CONSTRAINT Genres_PK PRIMARY KEY (ID));",
                 "CREATE TABLE Links (ID INTEGER NOT NULL,Show INTEGER,\"Type\" TEXT,URL TEXT,CONSTRAINT Links_PK PRIMARY KEY (ID),CONSTRAINT Links_Show_FK FOREIGN KEY (Show) REFERENCES Show(ID));",
                 "CREATE TABLE Countries (Country_ID INTEGER NOT NULL,Country_name TEXT(255),Country_code TEXT(255),Timezone TEXT(255),Official_site TEXT(255),CONSTRAINT Countries_PK PRIMARY KEY (Country_ID));",
@@ -22,53 +52,134 @@ def createdb(name,df_parquet):
                 "CREATE TABLE Show (ID INTEGER NOT NULL,URL TEXT,Name TEXT,Season INTEGER,Chapter_number INTEGER,\"Type\" INTEGER NOT NULL,Airdate TEXT,Airtime TEXT,Airstamp TEXT,Runtime INTEGER,Rating TEXT,Summary TEXT,Embedded INTEGER,Lenguage TEXT,Status TEXT,AVGRuntime INTEGER,Premiered TEXT,Ended TEXT,Official_site TEXT,Weight INTEGER,CONSTRAINT Show_PK PRIMARY KEY (ID),CONSTRAINT Show_web_channels_FK FOREIGN KEY (ID) REFERENCES web_channels(ID),CONSTRAINT Show_Show_type_FK FOREIGN KEY (\"Type\") REFERENCES Show_type(ID));",
                 "CREATE TABLE Show_genres (ID INTEGER NOT NULL,ID_Genre INTEGER,ID_Show INTEGER,CONSTRAINT Show_genres_PK PRIMARY KEY (ID),CONSTRAINT Show_genres_Genres_FK FOREIGN KEY (ID_Genre) REFERENCES Genres(ID),CONSTRAINT Show_genres_Show_FK FOREIGN KEY (ID_Show) REFERENCES Show(ID));"
                       ]
-            sqc = conn.cursor()
-            for Query in Schema:
-                sqc.execute(Query)            
             
 
+            print(f"Opened SQLite database with version {sq.sqlite_version} successfully.")
+            sqc = conn.cursor()
 
-            GenList=[]
-            for ind in df_parquet.index:
-                for sgen in df_parquet['show_genres'][ind]:
-                    Gadd=True
-                    for g in GenList:
-                        if g==sgen:
-                            Gadd=False
-                    if Gadd: GenList.append(sgen)
-             
-            it=1
-            for Ngen in GenList:
-                sqc.execute("INSERT INTO Genres (ID, Genre_number) VALUES("+str(it)+", '"+Ngen+"');")
-                it+=1
-
-            # for ind in df_parquet.index:
-            #     for sgen in df_parquet['show_links'][ind]:
-            #         print(sgen)
-
-            for ind in df_parquet.index:
-                for sgen in df_parquet['show_webChannel'][ind]:
-                    print(sgen)
-
-            # print(list(df_parquet.columns.values))
+            #Creacion de la base de datos con el esquema previamente diseñado   
+            CustomInsert(sqc,HArray,"Schema")
 
 
-        print("Primeras filas del DataFrame:")
-        print(df_parquet.head())     
-              
-        # print(f"Datos exportados exitosamente a la tabla '{name}' en la base de datos '{db}'")
-        
+            #Llenado de la base de datos
+            
+            #Seccion para filtrado y registro de generos
+            HArray=[]
+            for SData in df_parquet.index:
+                for record in df_parquet['show_genres'][SData]:
+                    SControler=True
+                    for it in HArray:
+                        if it==record:
+                            SControler=False
+                    if SControler: HArray.append(record)
+            CustomInsert(sqc, HArray, "Genres")
+            print("Generos registrados: "+str(len(HArray))) #Impresion de control
+
+           
+            #Seccion para filtrado y registro de paises
+            HArray=[]
+            for SData in df_parquet.index:
+                for record in df_parquet['show_webChannel'][SData] or []:
+                    SArray=df_parquet['show_webChannel'][SData]
+                    CountryData=[]
+                    Country = SArray["country"]
+                    if Country is not None:
+                        CountryData.append(Country["name"])
+                        CountryData.append(Country["code"])
+                        CountryData.append(Country["timezone"])
+                    else:
+                        CountryData.append("N/A")
+                        CountryData.append("N/A")
+                        CountryData.append("N/A")
+                    CountryData.append(SArray["officialSite"])
+                    
+                    SControler=True
+                    for c in HArray:
+                        if c[0]==CountryData[0] and c[1]==CountryData[1]and c[2]==CountryData[2]and c[3]==CountryData[3]:
+                            SControler=False
+                    if SControler: HArray.append(CountryData)
+            CustomInsert(sqc,HArray,"Country")
+            print("Paises registrados: "+str(len(HArray))) #Impresion de control
+
+
+            #Seccion para filtrado y registro de tipos de show
+            HArray=[]
+            for SData in df_parquet.index:
+                for record in df_parquet["type"]:
+                    SControler=True
+                    for it in HArray:
+                        if it==record:
+                            SControler=False
+                    if SControler: HArray.append(record)
+                for record in df_parquet['show_type']:
+                    SControler=True
+                    for it in HArray:
+                        if it==record:
+                            SControler=False
+                    if SControler: HArray.append(record)
+            CustomInsert(sqc,HArray,"Types")
+            print("Tipos de Show registrados: "+str(len(HArray))) #Impresion de control 
+                    
+
+            #Seccion para filtrado y registro del Canales Web
+            HArray=[]
+            for SData in df_parquet.index:
+                for record in df_parquet['show_webChannel'][SData] or []:
+                    SArray=df_parquet['show_webChannel'][SData]
+                    CountryData=[]
+                    a=[]
+                    a.append(SArray["name"])
+                    
+                    Country = SArray["country"]
+                    if Country is not None:
+                        CountryData.append(Country["name"])
+                        CountryData.append(Country["code"])
+                        CountryData.append(Country["timezone"])
+                    else:
+                        CountryData.append("N/A")
+                        CountryData.append("N/A")
+                        CountryData.append("N/A")
+                    CountryData.append(SArray["officialSite"])
+                    a.append(CountryData[0])             
+                    SControler=True
+                    for c in HArray:
+                        if c[0]==a[0] and c[1]==a[1]:
+                            SControler=False
+                    if SControler: HArray.append(a)
+
+
+                print(HArray)
+            #CustomInsert(sqc,HArray,"Types")
+
+
+
+
+
+
+
+
+
+
+                    #print(record)
+                #     SControler=True
+                #     for it in HArray:
+                #         if it==record:
+                #             SControler=False
+                #     if SControler: HArray.append(record)
+
+
+
+
+
+            #   Llenar las otras 5 tablas pendientes (todas con consulta previa a la DB para obtener Ids generados para las relaciones)
+                   
     except sq.OperationalError as e:
         print("Failed to open database:", e)
 
     
 def exporttosql(name,db):
-    
-
-
     df_parquet = pd.read_parquet('./data/'+name+'.parquet')
-    createdb(db,df_parquet)
-       
+    createdb(db,df_parquet)      
 
 def saveparquet(df,name):
     df.to_parquet("./data/"+name+".parquet",compression='snappy')
@@ -230,11 +341,11 @@ if __name__== '__main__':
    
     # # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
-    consultas(df, False)
-    generateprofiling(df,"previa")
-    saveparquet(df,name="Compressed_previa")
-    datacleanup(df)
-    saveparquet(df,name="Compressed_posterior")
+    # consultas(df, False)
+    # generateprofiling(df,"previa")
+    # saveparquet(df,name="Compressed_previa")
+    # datacleanup(df)
+    # saveparquet(df,name="Compressed_posterior")
     exporttosql("Compressed_posterior","Tvmaze_shows")
 
 
