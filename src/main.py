@@ -27,13 +27,22 @@ def CustomInsert(sqc, Records, QType):
             sqc.execute(Query)
             it+=1
     elif QType=="Types":
-         for record in Records:
+        for record in Records:
             sqc.execute("INSERT INTO Show_type (ID, Type) VALUES("+str(it)+", '"+record+"');")
+            it+=1
+    elif QType=="WChn":
+        for record in Records:
+            Query = "INSERT INTO web_channels (ID, Channel_name, Country_ID) VALUES("+str(it)+", '"+record[0]+"', "+str(record[3])+");"
+            sqc.execute(Query)
             it+=1
                 
 def CustomQuery(sqc, Query, Qtype):
-    if Qtype=="":
-        a=1
+    r = sqc.execute(Query)
+    if Qtype=="Get1":
+        r=r.fetchone()
+        return r[0]
+    
+
     return
 
 def createdb(name,df_parquet):
@@ -132,7 +141,6 @@ def createdb(name,df_parquet):
                     CountryData=[]
                     a=[]
                     a.append(SArray["name"])
-                    
                     Country = SArray["country"]
                     if Country is not None:
                         CountryData.append(Country["name"])
@@ -149,53 +157,39 @@ def createdb(name,df_parquet):
                     for c in HArray:
                         if c[0]==a[0] and c[1]==a[1]:
                             SControler=False
-                    if SControler: HArray.append(a)
+                    if SControler:
+                        SQry="SELECT Country_ID FROM Countries WHERE Country_name = '"
+                        SQry+=a[1]
+                        SQry+="' AND Official_site = '"
+                        if a[2] is not None:
+                            SQry+=a[2]
+                        else:
+                            SQry+="N/A"
+                        SQry+="';"                        
+                        id = CustomQuery(sqc,SQry, "Get1")                        
+                        a.append(id)                        
+                        HArray.append(a)
+            CustomInsert(sqc,HArray,"WChn")
+            print("Canales Web registrados: "+str(len(HArray))) #Impresion de control 
 
 
 
 
 
-
-
-
-
-                print(HArray)
-            #CustomInsert(sqc,HArray,"Types")
-
-
-
-
-
-
-
-
-
-
-                    #print(record)
-                #     SControler=True
-                #     for it in HArray:
-                #         if it==record:
-                #             SControler=False
-                #     if SControler: HArray.append(record)
-
-
-
-
-
-            #   Llenar las otras 5 tablas pendientes (todas con consulta previa a la DB para obtener Ids generados para las relaciones)
+            #   Llenar las otras 3 tablas pendientes (todas con consulta previa a la DB para obtener Ids generados para las relaciones)
                    
     except sq.OperationalError as e:
         print("Failed to open database:", e)
 
     
-def exporttosql(name,db):
+def ExportToSQL(name,db):
     df_parquet = pd.read_parquet('./data/'+name+'.parquet')
     createdb(db,df_parquet)      
 
-def saveparquet(df,name):
+def SaveParquet(df,name):
     df.to_parquet("./data/"+name+".parquet",compression='snappy')
 
-def datacleanup(df):
+def DataCleanup(df):
     # Columnas a eliminar (>70% valores nulos)
     columns_to_drop = ['show_dvdCountry', 'show_webChannel', 'show_externals','show_image','show_runtime','image','show_schedule']
     df = df.drop(columns=columns_to_drop)
@@ -214,9 +208,9 @@ def datacleanup(df):
     df['type'] = df['type'].str.lower()
     df['show_status'] = df['show_status'].str.lower()
     df['show_language'] = df['show_language'].str.lower()
-    generateprofiling(df, "posterior")
+    GenerateProfiling(df, "posterior")
 
-def consultas(df,vis):
+def Consultas(df,vis):
     
     # Consultas:
     # Verificar la estructura
@@ -228,7 +222,7 @@ def consultas(df,vis):
     # País del webchannel del  show
     if vis: print(df.iloc[x]['show_webChannel'])
     
-def generateprofiling(df,status):
+def GenerateProfiling(df,status):
     #Profiling Report
     profile = ProfileReport(df, title="Pandas Profiling Report")
     profile.to_file("./profiling/reporte_profiling-"+status+".html")
@@ -325,16 +319,14 @@ def StoreRawData(RAWData, FileName):
             json.dump(RAWData,file)
 
 #Función para cargar los datos desde el API 
-def LoadData(source,args):
-    
+def LoadData(source,args):    
     response = requests.get(source,params=args)
     if response.status_code==200:
         showList=[]
         response_json = response.json()
         n = len(response_json)
         for show in response_json:
-            showList.append(show)        
-       # StoreRawData(showList,args)
+            showList.append(show)    
 
 
 if __name__== '__main__':
@@ -357,7 +349,7 @@ if __name__== '__main__':
     # saveparquet(df,name="Compressed_previa")
     # datacleanup(df)
     # saveparquet(df,name="Compressed_posterior")
-    exporttosql("Compressed_posterior","Tvmaze_shows")
+    ExportToSQL("Compressed_posterior","Tvmaze_shows")
 
 
     
