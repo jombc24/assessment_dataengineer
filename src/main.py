@@ -31,7 +31,10 @@ def CustomInsert(sqc, Records, QType):
             sqc.execute("INSERT INTO Show_type (ID, Type) VALUES("+str(it)+", '"+record+"');")
             it+=1
                 
-
+def CustomQuery(sqc, Query, Qtype):
+    if Qtype=="":
+        a=1
+    return
 
 def createdb(name,df_parquet):
     print(name)
@@ -141,11 +144,19 @@ def createdb(name,df_parquet):
                         CountryData.append("N/A")
                     CountryData.append(SArray["officialSite"])
                     a.append(CountryData[0])             
+                    a.append(CountryData[3])
                     SControler=True
                     for c in HArray:
                         if c[0]==a[0] and c[1]==a[1]:
                             SControler=False
                     if SControler: HArray.append(a)
+
+
+
+
+
+
+
 
 
                 print(HArray)
