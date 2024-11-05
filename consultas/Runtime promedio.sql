@@ -1,0 +1,1 @@
+SELECT GE as Nombre, AVG (runtime) as Runtime_Promedio from Show GROUP BY Name 

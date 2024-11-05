@@ -7,6 +7,10 @@ import pandas as pd                          #libreria para modelar los datos ob
 from ydata_profiling import ProfileReport
 import sqlite3 as sq
 
+def escapec(esc):
+    esc = esc.replace('\'', '')
+    return esc 
+
 def CustomInsert(sqc, Records, QType):
     it=1
     if QType=="Schema":
@@ -35,23 +39,43 @@ def CustomInsert(sqc, Records, QType):
             Query = "INSERT INTO web_channels (ID, Channel_name, Country_ID) VALUES("+str(it)+", '"+record[0]+"', "+str(record[3])+");"
             sqc.execute(Query)
             it+=1
-                
+    elif QType=="Shows":
+        for record in Records:
+            SQry = "SELECT ID FROM Show_type WHERE \"Type\" = '"+str(record[4])+"';"
+            st = CustomQuery(sqc,SQry, "Get1")   
+            Query ="INSERT INTO Show (ID, URL, Name, Season, Chapter_number, Type, Airdate, Airtime, Airstamp, Runtime, Rating, Summary, Embedded, Lenguage, Status, AVGRuntime, Premiered, Ended, Official_site, Weight) VALUES("+str(it)+", '"+str(record[0])+"',"
+            Query+="'"+escapec(str(record[1]))+"'," 
+            Query+=str(record[2])+","
+            Query+="0" 
+            Query+=", "+str(st)+", '"+str(record[5])+"', '"+str(record[6])+"', '"+str(record[7])+"', "
+            Query += str(record[8])
+            Query+=", 'ojo aqui str(record[9])', "
+            Query+="'"
+            Query+="', 'aqui tambien str(record[11])', '"+str(record[12])+"', '"+str(record[13])+"', "
+            Query+= "0" 
+            Query+=", '"+str(record[15])+"', '"+str(record[16])+"', '"+str(record[17])+"', "+str(record[18])+");"
+            sqc.execute(Query)            
+            it+=1  
+    elif QType=="ShowGen":
+        Query ="SELECT COUNT(*) FROM Show_genres"
+        vgen = CustomQuery (sqc,Query,"Get1")
+        vgen+=1 
+        Query ="INSERT INTO Show_genres (ID, ID_Genre, ID_Show) VALUES("+str(vgen)+", "+str(Records[1])+", "+str(Records[0])+");"
+        sqc.execute(Query)            
+                 
+               
 def CustomQuery(sqc, Query, Qtype):
     r = sqc.execute(Query)
     if Qtype=="Get1":
         r=r.fetchone()
         return r[0]
-    
-
     return
 
-def createdb(name,df_parquet):
+def CreateDB(name,df_parquet):
     print(name)
     try:
         with sq.connect('./db/sec'+name+'.db') as conn:
             
-            #Realizar futura integracion a registros por mes (actual dia)
-
             #Variables Generales
             HArray=[]
             SControler=True
@@ -61,7 +85,7 @@ def createdb(name,df_parquet):
                 "CREATE TABLE Countries (Country_ID INTEGER NOT NULL,Country_name TEXT(255),Country_code TEXT(255),Timezone TEXT(255),Official_site TEXT(255),CONSTRAINT Countries_PK PRIMARY KEY (Country_ID));",
                 "CREATE TABLE Show_type (ID INTEGER NOT NULL,\"Type\" TEXT(255),CONSTRAINT Show_type_PK PRIMARY KEY (ID));",
                 "CREATE TABLE web_channels (ID INTEGER NOT NULL,Channel_name TEXT,Country_ID INTEGER,CONSTRAINT web_channels_pk PRIMARY KEY (ID),CONSTRAINT web_channels_Countries_FK FOREIGN KEY (Country_ID) REFERENCES Countries(Country_ID));",
-                "CREATE TABLE Show (ID INTEGER NOT NULL,URL TEXT,Name TEXT,Season INTEGER,Chapter_number INTEGER,\"Type\" INTEGER NOT NULL,Airdate TEXT,Airtime TEXT,Airstamp TEXT,Runtime INTEGER,Rating TEXT,Summary TEXT,Embedded INTEGER,Lenguage TEXT,Status TEXT,AVGRuntime INTEGER,Premiered TEXT,Ended TEXT,Official_site TEXT,Weight INTEGER,CONSTRAINT Show_PK PRIMARY KEY (ID),CONSTRAINT Show_web_channels_FK FOREIGN KEY (ID) REFERENCES web_channels(ID),CONSTRAINT Show_Show_type_FK FOREIGN KEY (\"Type\") REFERENCES Show_type(ID));",
+                "CREATE TABLE Show (ID INTEGER NOT NULL,URL TEXT,Name TEXT,Season INTEGER,Chapter_number INTEGER,\"Type\" INTEGER NOT NULL,Airdate TEXT,Airtime TEXT,Airstamp TEXT,Runtime NUMERIC,Rating TEXT,Summary TEXT,Embedded INTEGER,Lenguage TEXT,Status TEXT,AVGRuntime INTEGER,Premiered TEXT,Ended TEXT,Official_site TEXT,Weight INTEGER,CONSTRAINT Show_PK PRIMARY KEY (ID),CONSTRAINT Show_web_channels_FK FOREIGN KEY (ID) REFERENCES web_channels(ID),CONSTRAINT Show_Show_type_FK FOREIGN KEY (\"Type\") REFERENCES Show_type(ID));",
                 "CREATE TABLE Show_genres (ID INTEGER NOT NULL,ID_Genre INTEGER,ID_Show INTEGER,CONSTRAINT Show_genres_PK PRIMARY KEY (ID),CONSTRAINT Show_genres_Genres_FK FOREIGN KEY (ID_Genre) REFERENCES Genres(ID),CONSTRAINT Show_genres_Show_FK FOREIGN KEY (ID_Show) REFERENCES Show(ID));"
                       ]
             
@@ -173,18 +197,79 @@ def createdb(name,df_parquet):
             print("Canales Web registrados: "+str(len(HArray))) #Impresion de control 
 
 
+            #Seccion para filtrado y registro de shows
+            df_parquet = df_parquet.fillna('NULL')
+            HArray=[]
+            for SData in df_parquet.index:                  
+                infoshow = []
+                transfer = ""
+                transfer = df_parquet ["url"][SData]                
+                infoshow.append(transfer)
+                transfer = df_parquet ["name"][SData]               
+                infoshow.append(transfer)
+                transfer = df_parquet ["season"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["number"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["type"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["airdate"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["airtime"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["airstamp"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["runtime"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["rating"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["summary"][SData]
+                infoshow.append(transfer)
+                transfer = ""             
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_language"][SData]
+                infoshow.append(transfer)                
+                transfer = df_parquet ["show_status"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_averageRuntime"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_premiered"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_ended"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_officialSite"][SData]
+                infoshow.append(transfer)
+                transfer = df_parquet ["show_weight"][SData]
+                infoshow.append(transfer)
+                HArray.append(infoshow)
+            CustomInsert(sqc,HArray,"Shows")
+            print("Show registrados: "+str(len(HArray))) #Impresion de control 
 
 
-
-            #   Llenar las otras 3 tablas pendientes (todas con consulta previa a la DB para obtener Ids generados para las relaciones)
+            #Seccion para registro de Generos por Show
+            HArray=[]
+            for SData in df_parquet.index:
+                NVal=[]
+                for record in df_parquet['show_genres'][SData]:
                    
+                    #get show id
+                    SQry = "SELECT ID FROM Show WHERE URL ='"+df_parquet ["url"][SData] +"'"
+                    shid = CustomQuery(sqc,SQry, "Get1")  
+                    NVal.append(shid)
+                    #get gen id
+                    SQry = "SELECT ID FROM Genres WHERE Genre_number ='"+record +"'" 
+                    grid = CustomQuery(sqc,SQry, "Get1") 
+                    NVal.append(grid)
+                    CustomInsert(sqc,NVal,"ShowGen") 
+                                                                     
+            print("Generos de Show registrados: "+str(len(HArray))) #Impresion de control
+                  
     except sq.OperationalError as e:
         print("Failed to open database:", e)
-
     
 def ExportToSQL(name,db):
     df_parquet = pd.read_parquet('./data/'+name+'.parquet')
-    createdb(db,df_parquet)      
+    CreateDB(db,df_parquet)      
 
 def SaveParquet(df,name):
     df.to_parquet("./data/"+name+".parquet",compression='snappy')
@@ -326,7 +411,8 @@ def LoadData(source,args):
         response_json = response.json()
         n = len(response_json)
         for show in response_json:
-            showList.append(show)    
+            showList.append(show)   
+        StoreRawData(response_json,args)
 
 
 if __name__== '__main__':
@@ -340,15 +426,15 @@ if __name__== '__main__':
             checkday=str(totaldias)
         
         args = { 'date' : '2024-01-'+checkday} 
-        # # 0LoadData(url,args)
+        LoadData(url,args)
    
-    # # Crear DataFrame
+    # Crear DataFrame
     df = JsonaDataFrame(1, 2024,num_days)
-    # consultas(df, False)
-    # generateprofiling(df,"previa")
-    # saveparquet(df,name="Compressed_previa")
-    # datacleanup(df)
-    # saveparquet(df,name="Compressed_posterior")
+    Consultas(df, False)
+    GenerateProfiling(df,"previa")
+    SaveParquet(df,name="Compressed_previa")
+    DataCleanup(df)
+    SaveParquet(df,name="Compressed_posterior")
     ExportToSQL("Compressed_posterior","Tvmaze_shows")
 
 
